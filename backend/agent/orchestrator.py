@@ -219,7 +219,6 @@ class AgentOrchestrator:
 
         return {
 
-
             "goal":
                 state.goal,
 
@@ -248,20 +247,26 @@ class AgentOrchestrator:
                 state.completed_tools,
 
 
-            "findings":
-                findings,
-
+            # AI structured analysis
 
             "summary":
                 ai_analysis["summary"],
 
 
-            "confidence":
-                confidence,
+            "findings":
+                findings,
 
 
             "recommendation":
                 state.recommendation,
+
+
+            "full_report":
+                ai_analysis["full_report"],
+
+
+            "confidence":
+                confidence,
 
 
             "memory":

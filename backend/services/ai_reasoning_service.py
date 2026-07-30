@@ -19,68 +19,61 @@ class AIReasoningService:
     ):
 
 
-        prompt = self.build_prompt(
-            state
-        )
+        prompt = f"""
+
+        Analyse this SLA investigation.
+
+        CONTRACT:
+
+        {state.contract}
 
 
-        ai_report = self.llm.generate(
+        MONITORING:
+
+        {state.monitoring}
+
+
+        INCIDENTS:
+
+        {state.incidents}
+
+
+        EMAILS:
+
+        {state.emails}
+
+
+        FINANCE:
+
+        {state.finance}
+
+
+        Generate an enterprise investigation report.
+
+        """
+
+
+        report = self.llm.generate(
             prompt
         )
 
 
         return {
 
+
             "summary":
-                ai_report,
+                report["executive_summary"],
+
 
             "findings":
-                [
-                    ai_report
-                ],
+                report["evidence_analysis"],
+
 
             "recommendation":
-                ai_report
+                report["recovery_justification"],
+
+
+            "full_report":
+                report
 
         }
-
-
-
-    def build_prompt(
-        self,
-        state: AgentState
-    ):
-
-
-        return f"""
-
-        Investigate this SLA recovery case.
-
-        CONTRACT INFORMATION:
-
-        {state.contract}
-
-
-        MONITORING DATA:
-
-        {state.monitoring}
-
-
-        INCIDENT DATA:
-
-        {state.incidents}
-
-
-        PROVIDER EMAILS:
-
-        {state.emails}
-
-
-        FINANCIAL DATA:
-
-        {state.finance}
-
-
-        Provide a professional investigation report.
-
-        """

@@ -1,4 +1,5 @@
 import os
+import json
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -16,11 +17,6 @@ class LLMService:
             "OPENAI_API_KEY"
         )
 
-        if not api_key:
-            raise Exception(
-                "OPENAI_API_KEY missing"
-            )
-
         self.client = OpenAI(
             api_key=api_key
         )
@@ -35,29 +31,35 @@ class LLMService:
 
             model="gpt-4.1-mini",
 
+            response_format={
+                "type": "json_object"
+            },
+
             messages=[
 
                 {
                     "role": "system",
                     "content":
                     """
-                    You are RECOVERA AI.
+                    You are RECOVERA AI,
+                    an enterprise SLA recovery analyst.
 
-                    You are an expert SLA
-                    contract recovery analyst.
+                    Analyse the investigation evidence.
 
-                    Analyse evidence from:
-                    - contracts
-                    - monitoring logs
-                    - incidents
-                    - emails
-                    - invoices
+                    Return ONLY valid JSON.
 
-                    Generate:
-                    1. Executive summary
-                    2. Root cause analysis
-                    3. Recovery justification
-                    4. Recommended action
+                    Required structure:
+
+                    {
+                      "executive_summary": "",
+                      "root_cause_analysis": "",
+                      "evidence_analysis": [],
+                      "recovery_justification": "",
+                      "recommended_actions": [],
+                      "risk_assessment": ""
+                    }
+
+                    Do not add markdown.
                     """
                 },
 
@@ -72,9 +74,12 @@ class LLMService:
         )
 
 
-        return (
+        content = (
             response
             .choices[0]
             .message
             .content
         )
+
+
+        return json.loads(content)
