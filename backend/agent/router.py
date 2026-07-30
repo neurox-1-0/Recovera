@@ -1,29 +1,36 @@
-from tools import (
-    contract_tool,
-    monitoring_tool,
-    incident_tool,
-    email_tool,
-    finance_tool
-)
+from tools.contract_tool import ContractTool
+from tools.monitoring_tool import MonitoringTool
+from tools.incident_tool import IncidentTool
+from tools.email_tool import EmailTool
+from tools.finance_tool import FinanceTool
 
 
 class ToolRouter:
 
-    def run(self, tool_name):
+    def __init__(self, db):
 
-        if tool_name == "contract":
-            return contract_tool.run()
+        self.tools = {
 
-        if tool_name == "monitoring":
-            return monitoring_tool.run()
+            "contract": ContractTool(db),
 
-        if tool_name == "incident":
-            return incident_tool.run()
+            "monitoring": MonitoringTool(db),
 
-        if tool_name == "email":
-            return email_tool.run()
+            "incident": IncidentTool(db),
 
-        if tool_name == "finance":
-            return finance_tool.run()
+            "email": EmailTool(db),
 
-        raise Exception(f"Unknown tool: {tool_name}")
+            "finance": FinanceTool(db),
+        }
+
+
+    def run(self, tool_name, context):
+
+        if tool_name not in self.tools:
+            raise Exception(
+                f"Unknown tool: {tool_name}"
+            )
+
+
+        return self.tools[tool_name].run(
+            **context
+        )

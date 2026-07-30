@@ -2,6 +2,9 @@ from services.sla_service import SLAService
 from services.recovery_service import RecoveryService
 from services.evidence_service import EvidenceService
 
+from agent.orchestrator import AgentOrchestrator
+
+
 from repositories.contract_repository import ContractRepository
 from repositories.monitoring_repository import MonitoringRepository
 from repositories.incident_repository import IncidentRepository
@@ -14,55 +17,107 @@ from repositories.evidence_repository import EvidenceRepository
 from repositories.recovery_repository import RecoveryRepository
 from repositories.audit_repository import AuditRepository
 
+
 from models.recovery_case import RecoveryCase
 from models.audit_log import AuditLog
 
 
+
 class InvestigationService:
+
 
     def __init__(self, db):
 
         self.db = db
+
 
         # ---------------------------------
         # Repositories
         # ---------------------------------
 
         self.contract_repo = ContractRepository(db)
+
         self.monitoring_repo = MonitoringRepository(db)
+
         self.incident_repo = IncidentRepository(db)
+
         self.email_repo = EmailRepository(db)
+
         self.invoice_repo = InvoiceRepository(db)
+
         self.user_repo = UserRepository(db)
+
 
         self.investigation_repo = InvestigationRepository(db)
 
+
         self.evidence_repo = EvidenceRepository(db)
+
         self.recovery_repo = RecoveryRepository(db)
+
         self.audit_repo = AuditRepository(db)
+
+
 
         # ---------------------------------
         # Services
         # ---------------------------------
 
         self.sla_service = SLAService()
+
         self.recovery_service = RecoveryService()
+
 
         self.evidence_service = EvidenceService(
             self.evidence_repo
         )
 
 
-    def investigate(self, contract_id: int):
+        # ---------------------------------
+        # AI Agent
+        # ---------------------------------
+
+        self.agent = AgentOrchestrator(
+            db
+        )
+
+
+
+    def investigate(
+        self,
+        contract_id: int,
+        goal: str = "Investigate SLA breach"
+    ):
+
 
         # ---------------------------------
         # Load Contract
         # ---------------------------------
 
-        contract = self.contract_repo.get_by_id(contract_id)
+        contract = self.contract_repo.get_by_id(
+            contract_id
+        )
+
 
         if not contract:
-            raise Exception("Contract not found")
+            raise Exception(
+                "Contract not found"
+            )
+
+
+
+        # ---------------------------------
+        # Run AI Investigation Agent
+        # ---------------------------------
+
+        agent_result = self.agent.investigate(
+
+            goal=goal,
+
+            contract_number=
+                contract.contract_number
+        )
+
 
 
         # ---------------------------------
@@ -73,10 +128,12 @@ class InvestigationService:
             "admin@recovera.ai"
         )
 
+
         if not system_user:
             raise Exception(
                 "System administrator not found. Please run database.seed."
             )
+
 
 
         # ---------------------------------
@@ -85,11 +142,16 @@ class InvestigationService:
 
         investigation = (
             self.investigation_repo.create_investigation(
+
                 contract_id=contract.id,
+
                 created_by=system_user.id,
-                confidence_score=0.95,
+
+                confidence_score=
+                    agent_result["confidence"]
             )
         )
+
 
 
         # ---------------------------------
@@ -101,20 +163,24 @@ class InvestigationService:
             .get_by_contract(contract.id)
         )
 
+
         incidents = (
             self.incident_repo
             .get_by_contract(contract.id)
         )
+
 
         emails = (
             self.email_repo
             .get_by_contract(contract.id)
         )
 
+
         invoices = (
             self.invoice_repo
             .get_by_contract(contract.id)
         )
+
 
 
         if not monitoring_logs:
@@ -129,16 +195,26 @@ class InvestigationService:
             )
 
 
+
         # ---------------------------------
         # Generate Evidence
         # ---------------------------------
 
         self.evidence_service.generate(
-            investigation_id=investigation.id,
-            monitoring_logs=monitoring_logs,
-            incidents=incidents,
-            emails=emails,
+
+            investigation_id=
+                investigation.id,
+
+            monitoring_logs=
+                monitoring_logs,
+
+            incidents=
+                incidents,
+
+            emails=
+                emails,
         )
+
 
 
         # ---------------------------------
@@ -150,14 +226,18 @@ class InvestigationService:
         latest_invoice = invoices[-1]
 
 
+
         # ---------------------------------
         # SLA Analysis
         # ---------------------------------
 
         sla_result = self.sla_service.check_breach(
+
             contract.guaranteed_uptime,
-            latest_monitoring.uptime_percentage,
+
+            latest_monitoring.uptime_percentage
         )
+
 
 
         # ---------------------------------
@@ -165,18 +245,28 @@ class InvestigationService:
         # ---------------------------------
 
         eligible = self.recovery_service.check_eligibility(
+
             sla_result["breach"]
+
         )
 
 
         estimated_credit = (
+
             self.recovery_service.calculate_credit(
+
                 latest_invoice.amount,
-                contract.credit_percentage,
+
+                contract.credit_percentage
+
             )
+
             if eligible
+
             else 0
+
         )
+
 
 
         # ---------------------------------
@@ -184,13 +274,24 @@ class InvestigationService:
         # ---------------------------------
 
         recovery_case = RecoveryCase(
-            investigation_id=investigation.id,
-            eligible=eligible,
-            estimated_credit=estimated_credit,
+
+            investigation_id=
+                investigation.id,
+
+            eligible=
+                eligible,
+
+            estimated_credit=
+                estimated_credit,
+
             justification=(
+
                 "SLA breached based on monitoring logs."
+
                 if eligible
+
                 else "No SLA breach detected."
+
             ),
         )
 
@@ -200,17 +301,21 @@ class InvestigationService:
         )
 
 
+
         # ---------------------------------
         # Save Audit Log
         # ---------------------------------
 
         audit_log = AuditLog(
-            user_id=system_user.id,
-            action="Investigation Completed",
-            details=(
-                f"Investigation #{investigation.id} completed "
-                f"for contract {contract.contract_number}."
-            ),
+
+            user_id=
+                system_user.id,
+
+            action=
+                "AI Investigation Completed",
+
+            details=
+                f"Investigation #{investigation.id} completed."
         )
 
 
@@ -219,74 +324,95 @@ class InvestigationService:
         )
 
 
+
         # ---------------------------------
         # Complete Investigation
         # ---------------------------------
 
         self.investigation_repo.complete_investigation(
+
             investigation
+
         )
 
 
-        # ---------------------------------
-        # Commit Transaction
-        # ---------------------------------
 
         self.db.commit()
 
 
+
         # ---------------------------------
-        # Investigation Report
+        # Final Report
         # ---------------------------------
 
         report = {
 
+
             "investigation_id":
                 investigation.id,
+
 
             "contract_number":
                 contract.contract_number,
 
+
             "service":
                 contract.service_name,
+
 
             "provider":
                 contract.provider,
 
+
             "customer":
                 contract.customer,
+
 
             "required_uptime":
                 contract.guaranteed_uptime,
 
+
             "actual_uptime":
                 latest_monitoring.uptime_percentage,
 
-            "uptime_difference":
-                sla_result["uptime_difference"],
 
             "sla_breach":
                 sla_result["breach"],
 
+
             "incident_count":
                 len(incidents),
+
 
             "email_count":
                 len(emails),
 
-            "evidence_generated":
-                len(monitoring_logs)
-                + len(incidents)
-                + len(emails),
-
-            "invoice_amount":
-                latest_invoice.amount,
 
             "estimated_credit":
                 estimated_credit,
 
+
             "eligible":
                 eligible,
+
+
+            # AI Output
+
+            "ai_findings":
+                agent_result["findings"],
+
+
+            "ai_confidence":
+                agent_result["confidence"],
+
+
+            "ai_recommendation":
+                agent_result["recommendation"],
+
+
+            "agent_memory":
+                agent_result["memory"]
+
         }
 
 

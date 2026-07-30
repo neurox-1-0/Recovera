@@ -4,18 +4,46 @@ from typing import Dict, List, Any
 
 @dataclass
 class AgentState:
+
     goal: str
 
-    contract: Dict[str, Any] = field(default_factory=dict)
-    monitoring: Dict[str, Any] = field(default_factory=dict)
-    incidents: List[Dict[str, Any]] = field(default_factory=list)
-    emails: List[Dict[str, Any]] = field(default_factory=list)
-    finance: Dict[str, Any] = field(default_factory=dict)
+    # Contract information
+    contract: Dict[str, Any] = field(
+        default_factory=dict
+    )
 
-    evidence: List[str] = field(default_factory=list)
+    # Monitoring contains multiple records
+    monitoring: List[Dict[str, Any]] = field(
+        default_factory=list
+    )
 
-    completed_tools: List[str] = field(default_factory=list)
+    # Incident records
+    incidents: List[Dict[str, Any]] = field(
+        default_factory=list
+    )
 
+    # Provider communication records
+    emails: List[Dict[str, Any]] = field(
+        default_factory=list
+    )
+
+    # Financial information
+    finance: List[Dict[str, Any]] = field(
+        default_factory=list
+    )
+
+    # Generated evidence
+    evidence: List[str] = field(
+        default_factory=list
+    )
+
+    # Track executed tools
+    completed_tools: List[str] = field(
+        default_factory=list
+    )
+
+    # Agent confidence score
     confidence: float = 0.0
 
+    # Final recommendation
     recommendation: str = ""
