@@ -3,15 +3,22 @@ from agent.planner import Planner
 from agent.router import ToolRouter
 from agent.memory import AgentMemory
 from agent.logger import AgentLogger
-from agent.evaluator import Evaluator
 from agent.confidence import ConfidenceEngine
+
+from services.ai_reasoning_service import AIReasoningService
+
 
 
 class AgentOrchestrator:
 
+
     def __init__(self, db):
 
         self.db = db
+
+        # ---------------------------------
+        # Agent Components
+        # ---------------------------------
 
         self.planner = Planner()
 
@@ -21,7 +28,12 @@ class AgentOrchestrator:
 
         self.logger = AgentLogger()
 
-        self.evaluator = Evaluator()
+
+        # ---------------------------------
+        # Intelligence Layer
+        # ---------------------------------
+
+        self.reasoning = AIReasoningService()
 
         self.confidence = ConfidenceEngine()
 
@@ -32,6 +44,7 @@ class AgentOrchestrator:
         goal: str,
         contract_number: str
     ):
+
 
         # ---------------------------------
         # Create Agent State
@@ -78,8 +91,10 @@ class AgentOrchestrator:
             if tool == "contract":
 
                 context = {
+
                     "contract_number":
                         contract_number
+
                 }
 
 
@@ -93,14 +108,16 @@ class AgentOrchestrator:
 
 
                 context = {
+
                     "contract_id":
                         state.contract["id"]
+
                 }
 
 
 
             # ---------------------------------
-            # Run Tool
+            # Execute Tool
             # ---------------------------------
 
             result = self.router.run(
@@ -111,7 +128,7 @@ class AgentOrchestrator:
 
 
             # ---------------------------------
-            # Store Result
+            # Save Tool Result
             # ---------------------------------
 
             if tool == "contract":
@@ -150,31 +167,40 @@ class AgentOrchestrator:
 
                 title=tool,
 
-                details=
-                    "Tool executed successfully."
+                details="Tool executed successfully."
 
             )
 
 
 
         # ---------------------------------
-        # Evaluate Investigation
+        # AI Reasoning
         # ---------------------------------
 
-        findings = self.evaluator.evaluate(
+        ai_analysis = self.reasoning.analyze(
             state
+        )
+
+
+        state.recommendation = (
+            ai_analysis["recommendation"]
+        )
+
+
+
+        findings = (
+            ai_analysis["findings"]
         )
 
 
 
         # ---------------------------------
-        # Calculate Confidence
+        # Confidence Calculation
         # ---------------------------------
 
         confidence = self.confidence.calculate(
             state
         )
-
 
 
         state.confidence = confidence
@@ -188,10 +214,11 @@ class AgentOrchestrator:
 
 
         # ---------------------------------
-        # Return Agent Report
+        # Return Report
         # ---------------------------------
 
         return {
+
 
             "goal":
                 state.goal,
@@ -225,6 +252,10 @@ class AgentOrchestrator:
                 findings,
 
 
+            "summary":
+                ai_analysis["summary"],
+
+
             "confidence":
                 confidence,
 
@@ -235,4 +266,5 @@ class AgentOrchestrator:
 
             "memory":
                 self.memory.history()
+
         }
