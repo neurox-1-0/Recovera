@@ -21,36 +21,49 @@ class AIReasoningService:
 
         prompt = f"""
 
-        Analyse this SLA investigation.
+You are an enterprise SLA recovery AI agent.
 
-        CONTRACT:
+Analyze the following SLA investigation data.
 
-        {state.contract}
+Generate a structured investigation report.
 
-
-        MONITORING:
-
-        {state.monitoring}
+CONTRACT:
+{state.contract}
 
 
-        INCIDENTS:
-
-        {state.incidents}
-
-
-        EMAILS:
-
-        {state.emails}
+MONITORING:
+{state.monitoring}
 
 
-        FINANCE:
+INCIDENTS:
+{state.incidents}
 
-        {state.finance}
+
+EMAILS:
+{state.emails}
 
 
-        Generate an enterprise investigation report.
+FINANCE:
+{state.finance}
 
-        """
+
+Return the report with these sections:
+
+1. executive_summary
+2. root_cause_analysis
+3. evidence_analysis
+4. recovery_justification
+5. recommended_actions
+6. risk_assessment
+
+The analysis must determine:
+- whether SLA breach occurred
+- why it occurred
+- available evidence
+- recovery eligibility
+- recommended business action
+
+"""
 
 
         report = self.llm.generate(
@@ -62,18 +75,31 @@ class AIReasoningService:
 
 
             "summary":
-                report["executive_summary"],
+                report.get(
+                    "executive_summary",
+                    ""
+                ),
+
 
 
             "findings":
-                report["evidence_analysis"],
+                report.get(
+                    "evidence_analysis",
+                    []
+                ),
+
 
 
             "recommendation":
-                report["recovery_justification"],
+                report.get(
+                    "recovery_justification",
+                    ""
+                ),
+
 
 
             "full_report":
                 report
+
 
         }

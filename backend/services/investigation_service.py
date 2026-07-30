@@ -73,6 +73,7 @@ class InvestigationService:
         )
 
 
+
         # ---------------------------------
         # AI Agent
         # ---------------------------------
@@ -116,6 +117,7 @@ class InvestigationService:
 
             contract_number=
                 contract.contract_number
+
         )
 
 
@@ -148,7 +150,11 @@ class InvestigationService:
                 created_by=system_user.id,
 
                 confidence_score=
-                    agent_result["confidence"]
+                    agent_result.get(
+                        "confidence",
+                        0
+                    )
+
             )
         )
 
@@ -212,7 +218,8 @@ class InvestigationService:
                 incidents,
 
             emails=
-                emails,
+                emails
+
         )
 
 
@@ -236,6 +243,7 @@ class InvestigationService:
             contract.guaranteed_uptime,
 
             latest_monitoring.uptime_percentage
+
         )
 
 
@@ -292,7 +300,8 @@ class InvestigationService:
 
                 else "No SLA breach detected."
 
-            ),
+            )
+
         )
 
 
@@ -316,6 +325,7 @@ class InvestigationService:
 
             details=
                 f"Investigation #{investigation.id} completed."
+
         )
 
 
@@ -330,9 +340,7 @@ class InvestigationService:
         # ---------------------------------
 
         self.investigation_repo.complete_investigation(
-
             investigation
-
         )
 
 
@@ -396,22 +404,48 @@ class InvestigationService:
                 eligible,
 
 
-            # AI Output
+
+            # ---------------------------------
+            # AI REPORT
+            # ---------------------------------
+
+            "ai_report":
+                agent_result.get(
+                    "full_report",
+                    {}
+                ),
+
+
 
             "ai_findings":
-                agent_result["findings"],
+                agent_result.get(
+                    "findings",
+                    []
+                ),
+
 
 
             "ai_confidence":
-                agent_result["confidence"],
+                agent_result.get(
+                    "confidence",
+                    0
+                ),
+
 
 
             "ai_recommendation":
-                agent_result["recommendation"],
+                agent_result.get(
+                    "recommendation",
+                    ""
+                ),
+
 
 
             "agent_memory":
-                agent_result["memory"]
+                agent_result.get(
+                    "memory",
+                    []
+                )
 
         }
 
