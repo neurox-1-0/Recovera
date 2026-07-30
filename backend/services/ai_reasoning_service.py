@@ -1,84 +1,86 @@
 from agent.state import AgentState
 
+from services.llm_service import LLMService
+
+
 
 class AIReasoningService:
 
 
-    def analyze(self, state: AgentState):
+    def __init__(self):
 
-        findings = []
-
-        recommendation = ""
+        self.llm = LLMService()
 
 
-        # SLA Analysis
 
-        if state.monitoring:
-
-            latest = state.monitoring[-1]
-
-            findings.append(
-                f"Monitoring analysis identified "
-                f"{latest['outage_minutes']} minutes of service disruption."
-            )
+    def analyze(
+        self,
+        state: AgentState
+    ):
 
 
-        # Incident Analysis
-
-        if state.incidents:
-
-            findings.append(
-                f"{len(state.incidents)} provider incident(s) "
-                "were identified during investigation."
-            )
+        prompt = self.build_prompt(
+            state
+        )
 
 
-        # Email Analysis
-
-        if state.emails:
-
-            findings.append(
-                "Provider communication evidence was reviewed."
-            )
-
-
-        # Financial Analysis
-
-        if state.finance:
-
-            total = sum(
-                invoice["amount"]
-                for invoice in state.finance
-            )
-
-            findings.append(
-                f"Financial impact analysis reviewed "
-                f"invoices totaling {total}."
-            )
-
-
-        if state.incidents and state.monitoring:
-
-            recommendation = (
-                "Proceed with SLA credit recovery "
-                "based on verified service disruption evidence."
-            )
-
-        else:
-
-            recommendation = (
-                "Insufficient evidence for recovery claim."
-            )
+        ai_report = self.llm.generate(
+            prompt
+        )
 
 
         return {
 
             "summary":
-                " ".join(findings),
+                ai_report,
 
             "findings":
-                findings,
+                [
+                    ai_report
+                ],
 
             "recommendation":
-                recommendation
+                ai_report
+
         }
+
+
+
+    def build_prompt(
+        self,
+        state: AgentState
+    ):
+
+
+        return f"""
+
+        Investigate this SLA recovery case.
+
+        CONTRACT INFORMATION:
+
+        {state.contract}
+
+
+        MONITORING DATA:
+
+        {state.monitoring}
+
+
+        INCIDENT DATA:
+
+        {state.incidents}
+
+
+        PROVIDER EMAILS:
+
+        {state.emails}
+
+
+        FINANCIAL DATA:
+
+        {state.finance}
+
+
+        Provide a professional investigation report.
+
+        """
